@@ -6,8 +6,13 @@
 
 enum class TokenType {
     exit,
-    int_lit,
-    semi
+    integer,
+    semi_column,
+    open_parenthesis,
+    close_parenthesis,
+    identifier,
+    var,
+    equal_sign
 };
 
 struct Token {
@@ -27,42 +32,54 @@ public:
 
         while (peek().has_value()) {
             if (std::isalpha(peek().value())) {
+
                 buffer.push_back(consume());
                 while (peek().has_value() and std::isalnum(peek().value())) {
                     buffer.push_back(consume());
                 }
 
-                if (buffer == "exit"){
+                if (buffer == "exit") {
                     tokens.push_back({.type = TokenType::exit});
                     buffer.clear();
                     continue;
-                }else{
-                    std::cerr << "You messed up!" << std::endl;
-                    exit(EXIT_FAILURE);
+                } else if (buffer == "var") {
+                    tokens.push_back({.type = TokenType::var});
+                    buffer.clear();
+                    continue;
+                } else {
+                    tokens.push_back({.type = TokenType::identifier, .value = buffer});
+                    buffer.clear();
+                    continue;
                 }
-            }
-            else if (std::isdigit(peek().value())){
+
+            } else if (std::isdigit(peek().value())) {
                 buffer.push_back(consume());
-                while(peek().has_value() and std::isdigit(peek().value()))
-                {
+                while (peek().has_value() and std::isdigit(peek().value())) {
                     buffer.push_back(consume());
                 }
-                tokens.push_back({.type = TokenType::int_lit, .value = buffer});
+                tokens.push_back({.type = TokenType::integer, .value = buffer});
                 buffer.clear();
                 continue;
-            }
-            else if(peek().value() == ';')
-            {
+            } else if (peek().value() == '(') {
                 consume();
-                tokens.push_back({.type = TokenType::semi});
+                tokens.push_back({.type = TokenType::open_parenthesis});
                 continue;
-            }
-            else if(isspace(peek().value()))
-            {
+            } else if (peek().value() == ')') {
+                consume();
+                tokens.push_back({.type = TokenType::close_parenthesis});
+                continue;
+            } else if (peek().value() == ';') {
+                consume();
+                tokens.push_back({.type = TokenType::semi_column});
+                continue;
+            } else if (peek().value() == '=') {
+                consume();
+                tokens.push_back({.type = TokenType::equal_sign});
+                continue;
+            } else if (isspace(peek().value())) {
                 consume();
                 continue;
-            }
-            else{
+            } else {
                 std::cerr << "You messed up!" << std::endl;
                 exit(EXIT_FAILURE);
             }
@@ -79,15 +96,15 @@ private:
 
     int m_index;
 
-    [[nodiscard]] std::optional<char> peek(int ahead = 1) const {
-        if (m_index + ahead >= m_src.length()) {
+    [[nodiscard]] inline std::optional<char> peek(int offset = 0) const {
+        if (m_index + offset >= m_src.length()) {
             return {};
         } else {
-            return m_src.at(m_index);
+            return m_src.at(m_index + offset);
         }
     }
 
-    char consume() {
+    inline char consume() {
         return m_src.at(m_index++);
     }
 
